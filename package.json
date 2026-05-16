@@ -1,0 +1,14 @@
+{
+  "name": "stock-pulse",
+  "version": "1.0.0",
+  "description": "EMA signal tracker PWA for Avanza portfolio",
+  "private": true,
+  "scripts": {
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy",
+    "secret": "wrangler secret put ANTHROPIC_API_KEY"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

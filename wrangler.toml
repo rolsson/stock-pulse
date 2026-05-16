@@ -1,4 +1,4 @@
-name = "stock-pulse-proxy"
+name = "stock-pulse"
 main = "worker/index.js"
 compatibility_date = "2024-01-01"
 

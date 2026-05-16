@@ -7,5 +7,5 @@
  * Leave as empty string to see a helpful setup message in the app.
  */
 const CONFIG = {
-  WORKER_URL: '', // ← paste your Worker URL here after: wrangler deploy
+  WORKER_URL: 'https://stock-pulse-proxy.robbanolsson.workers.dev',
 };

@@ -119,7 +119,7 @@ export default {
       const tickers = tickerParam.split(',').map(t => t.trim()).filter(Boolean);
 
       if (tickers.length === 0) return json({ error: 'Provide ?tickers=AAPL,MSFT' }, 400);
-      if (tickers.length > 50) return json({ error: 'Max 50 tickers per request' }, 400);
+      if (tickers.length > 200) return json({ error: 'Max 200 tickers per request' }, 400);
 
       // All in parallel — no rate limit issue calling Yahoo from a Worker
       const results = await Promise.all(tickers.map(quoteForTicker));

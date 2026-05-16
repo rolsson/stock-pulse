@@ -37,13 +37,12 @@
   .tab.active .tab-count{background:var(--accent-dim);color:var(--accent);}
   .panel{display:none;padding:12px 16px 80px;}
   .panel.active{display:block;}
-  .file-btn-label{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px 16px;background:var(--accent-dim);border:1.5px solid var(--accent);border-radius:12px;cursor:pointer;transition:all .2s;margin-bottom:14px;-webkit-tap-highlight-color:transparent;}
-  .file-btn-label:active{background:var(--accent);color:var(--bg);}
-  .file-btn-label input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
-  .file-btn-icon{font-size:22px;line-height:1;}
-  .file-btn-text{display:flex;flex-direction:column;gap:2px;}
-  .file-btn-title{font-size:13px;font-weight:500;color:var(--accent);letter-spacing:.2px;}
-  .file-btn-sub{font-size:10px;color:var(--muted);}
+  .upload-zone{border:1.5px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;background:var(--surface);}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--accent-dim);}
+  .upload-zone input{display:none;}
+  .upload-icon{font-size:20px;margin-bottom:4px;}
+  .upload-label{color:var(--muted);font-size:11px;line-height:1.6;}
+  .upload-label strong{color:var(--accent);}
   .summary-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
   .summary-pill{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;}
   .summary-pill .val{font-size:18px;font-weight:500;line-height:1;margin-bottom:2px;}
@@ -101,7 +100,7 @@
 <body>
 <div class="app-header">
   <div>
-    <div class="app-title">Stock Pulse</div>
+    <div class="app-title">StockPulse</div>
     <div class="app-subtitle">EMA Signal Tracker</div>
   </div>
   <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">&#8635; Refresh</button>
@@ -130,15 +129,16 @@
 </div>
 
 <div id="import" class="panel">
-  <div class="section-header">Import Avanza Portfolio Export</div>
-  <label class="file-btn-label">
-    <input type="file" id="csvFile" accept=".csv,text/csv,text/plain" onchange="handleFile(this.files[0])">
-    <span class="file-btn-icon">&#128193;</span>
-    <span class="file-btn-text">
-      <span class="file-btn-title">Choose CSV from Files</span>
-      <span class="file-btn-sub">Opens iOS Files app · Avanza export</span>
-    </span>
-  </label>
+  <div class="section-header">Upload Avanza Portfolio Export</div>
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+    <input type="file" id="csvFile" accept=".csv" onchange="handleFile(this.files[0])">
+    <div class="upload-icon">&#128194;</div>
+    <div class="upload-label">
+      <strong>Tap to upload CSV</strong><br>
+      Avanza semicolon-delimited export<br>
+      <span style="color:var(--text)">Only Typ=STOCK rows imported</span>
+    </div>
+  </div>
   <div class="section-header" style="margin-top:16px">How It Works</div>
   <div style="font-size:10px;color:var(--muted);line-height:1.9;">
     Only <strong style="color:var(--text)">Typ=STOCK</strong> rows are imported — funds, ETFs and certificates are skipped.<br><br>
@@ -175,6 +175,16 @@ function isCacheValid(ticker) {
 }
 
 // ── Swedish number parse ───────────────────────────────────────────────────
+// ── Avanza exchange -> Yahoo Finance suffix ────────────────────────────────
+var MARKET_SUFFIX = {
+  XSTO: '.ST', XCSE: '.CO', XHEL: '.HE', XOSL: '.OL', XSAT: '.ST'
+};
+
+function buildTicker(kortnamn, marknad) {
+  var suffix = MARKET_SUFFIX[marknad] || '';
+  return kortnamn.trim().replace(/\s+/g, '-') + suffix;
+}
+
 function parseSENum(s) {
   if (!s) return 0;
   return parseFloat(s.trim().replace(/\./g,'').replace(',','.')) || 0;
@@ -227,21 +237,20 @@ function handleFile(file) {
       var volym   = iVolym   >= 0 ? parseSENum(cols[iVolym]) : 0;
       var gav     = iGAV     >= 0 ? parseSENum(cols[iGAV])   : 0;
       if (!kort) continue;
-      // Use Namn as the search key for Claude (more reliable than exchange-specific tickers)
-      var id = namn || kort;
-      parsed.push({ id:id, displayName:namn, kortnamn:kort, shares:volym, costBasis:gav, valuta:valuta, marknad:marknad });
-      newTickers[id] = true;
+      var ticker = buildTicker(kort, marknad);
+      parsed.push({ ticker:ticker, displayName:namn, kortnamn:kort, shares:volym, costBasis:gav, valuta:valuta, marknad:marknad });
+      newTickers[ticker] = true;
     }
     if (!parsed.length) { showError('No STOCK rows found in file'); return; }
 
     // Dropped stocks -> watchlist
     portfolio.forEach(function(s) {
-      if (!newTickers[s.id] && !watchlist.find(function(w){ return w.id===s.id; })) {
-        watchlist.push({ id:s.id, displayName:s.displayName, kortnamn:s.kortnamn, shares:0, costBasis:0, valuta:s.valuta, marknad:s.marknad });
+      if (!newTickers[s.ticker] && !watchlist.find(function(w){ return w.ticker===s.ticker; })) {
+        watchlist.push({ ticker:s.ticker, displayName:s.displayName, kortnamn:s.kortnamn, shares:0, costBasis:0, valuta:s.valuta, marknad:s.marknad });
       }
     });
     // Re-bought -> remove from watchlist
-    watchlist = watchlist.filter(function(w){ return !newTickers[w.id]; });
+    watchlist = watchlist.filter(function(w){ return !newTickers[w.ticker]; });
     portfolio = parsed;
     save();
     switchTab('portfolio', document.querySelector('.tab'));
@@ -279,9 +288,9 @@ function trackSell(id, signal) {
   else delete sellDates[id];
 }
 
-function sellDaysCount(id) {
-  if (!sellDates[id]) return 0;
-  return Math.floor((Date.now() - new Date(sellDates[id])) / 86400000);
+function sellDaysCount(ticker) {
+  if (!sellDates[ticker]) return 0;
+  return Math.floor((Date.now() - new Date(sellDates[ticker])) / 86400000);
 }
 
 // ── Progress UI ────────────────────────────────────────────────────────────
@@ -308,13 +317,13 @@ async function loadAndRender(useCache) {
 
   var allStocks = portfolio.concat(watchlist);
   var toFetch = useCache
-    ? allStocks.filter(function(s){ return !isCacheValid(s.id); })
+    ? allStocks.filter(function(s){ return !isCacheValid(s.ticker); })
     : allStocks;
 
   // Apply cached signals to stocks that don't need refresh
   allStocks.forEach(function(s) {
-    if (isCacheValid(s.id) && signalCache[s.id]) {
-      var c = signalCache[s.id];
+    if (isCacheValid(s.ticker) && signalCache[s.ticker]) {
+      var c = signalCache[s.ticker];
       s.price = c.price; s.ema10 = c.ema10; s.ema20 = c.ema20; s.ema50 = c.ema50;
       s.currency = c.currency;
       s.signal = computeSignal(c.price, c.ema10, c.ema20, c.ema50);
@@ -384,7 +393,7 @@ function fmt(n, dec) { return n != null ? n.toFixed(dec||2) : '--'; }
 
 function renderCard(s, isWatch) {
   var sig = s.signal || 'HOLD';
-  var days = sellDaysCount(s.id);
+  var days = sellDaysCount(s.ticker);
   var cur = s.currency || s.valuta || '';
   var pnl = null;
   // P&L: compare current price to GAV. Both should be in same currency.
@@ -483,9 +492,9 @@ async function addToWatchlist() {
   var name = input.value.trim();
   if (!name) return;
   var id = name.toUpperCase();
-  if (watchlist.find(function(s){ return s.id===id; })) { showError(name+' already on watchlist'); return; }
-  if (portfolio.find(function(s){ return s.id===id; })) { showError(name+' is in your portfolio'); return; }
-  var entry = { id:id, displayName:name, kortnamn:name, shares:0, costBasis:0, valuta:'', marknad:'' };
+  if (watchlist.find(function(s){ return s.ticker===id; })) { showError(name+' already on watchlist'); return; }
+  if (portfolio.find(function(s){ return s.ticker===id; })) { showError(name+' is in your portfolio'); return; }
+  var entry = { ticker:id, displayName:name, kortnamn:name, shares:0, costBasis:0, valuta:'', marknad:'' };
   watchlist.push(entry);
   save();
   renderWatchlist();
@@ -513,6 +522,11 @@ async function addToWatchlist() {
 }
 
 document.getElementById('watchInput').addEventListener('keydown', function(e){ if(e.key==='Enter') addToWatchlist(); });
+
+var dz = document.getElementById('dropZone');
+dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
+dz.addEventListener('drop',      function(e){ e.preventDefault(); dz.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
 
 // Init
 if (portfolio.length || watchlist.length) loadAndRender(true);

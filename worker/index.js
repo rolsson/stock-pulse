@@ -42,6 +42,20 @@ function ema(closes, period) {
   return val;
 }
 
+// Returns full EMA series (null for the first period-1 entries)
+function emaArray(closes, period) {
+  if (closes.length < period) return closes.map(() => null);
+  const k = 2 / (period + 1);
+  let val = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  const out = closes.map(() => null);
+  out[period - 1] = val;
+  for (let i = period; i < closes.length; i++) {
+    val = closes[i] * k + val * (1 - k);
+    out[i] = val;
+  }
+  return out;
+}
+
 function computeSignal(price, e10, e20, e50) {
   if (price == null || e10 == null || e20 == null || e50 == null) return 'HOLD';
   if (e10 > e20 && price > e50) return 'BUY';
@@ -72,28 +86,51 @@ async function quoteForTicker(ticker) {
     const result = data?.chart?.result?.[0];
     if (!result) return { ticker, error: 'No chart data returned' };
 
-    const meta     = result.meta;
+    const meta      = result.meta;
     const rawCloses = result.indicators?.quote?.[0]?.close ?? [];
-    const closes   = rawCloses.filter(v => v != null);
+    const rawTs     = result.timestamp ?? [];
 
-    if (closes.length < 50) {
-      return { ticker, error: `Only ${closes.length} trading days found (need 50+)` };
+    // Filter nulls while keeping timestamp alignment
+    const days = rawCloses
+      .map((c, i) => ({ close: c, ts: rawTs[i] ?? null }))
+      .filter(d => d.close != null);
+
+    if (days.length < 50) {
+      return { ticker, error: `Only ${days.length} trading days found (need 50+)` };
     }
+
+    const closes = days.map(d => d.close);
 
     const price    = meta.regularMarketPrice ?? closes[closes.length - 1];
     const currency = meta.currency ?? 'USD';
     const e10 = ema(closes, 10);
     const e20 = ema(closes, 20);
     const e50 = ema(closes, 50);
+    const signal = computeSignal(price, e10, e20, e50);
+
+    // Backdate signal: walk back through per-day EMA series to find when
+    // the current signal run started
+    const e10s = emaArray(closes, 10);
+    const e20s = emaArray(closes, 20);
+    const e50s = emaArray(closes, 50);
+    let runStart = days.length - 1;
+    for (let i = days.length - 2; i >= 0; i--) {
+      if (computeSignal(closes[i], e10s[i], e20s[i], e50s[i]) !== signal) break;
+      runStart = i;
+    }
+    const signalSince = days[runStart].ts
+      ? new Date(days[runStart].ts * 1000).toISOString().split('T')[0]
+      : null;
 
     return {
       ticker,
-      price:    +price.toFixed(4),
-      ema10:    +e10.toFixed(4),
-      ema20:    +e20.toFixed(4),
-      ema50:    +e50.toFixed(4),
-      signal:   computeSignal(price, e10, e20, e50),
+      price:       +price.toFixed(4),
+      ema10:       +e10.toFixed(4),
+      ema20:       +e20.toFixed(4),
+      ema50:       +e50.toFixed(4),
+      signal,
       currency,
+      signalSince,
     };
   } catch (err) {
     return { ticker, error: err.message };

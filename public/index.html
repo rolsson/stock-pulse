@@ -304,10 +304,14 @@ function computeSignal(price, ema10, ema20, ema50) {
   return 'HOLD';
 }
 
-function trackSignal(ticker, signal) {
+function trackSignal(ticker, signal, since) {
   var today = new Date().toISOString().split('T')[0];
+  var date = since || today;
   if (!signalDates[ticker] || signalDates[ticker].signal !== signal) {
-    signalDates[ticker] = { signal: signal, date: today };
+    signalDates[ticker] = { signal: signal, date: date };
+  } else if (since && since < signalDates[ticker].date) {
+    // Worker gave us an earlier (more accurate) start — use it
+    signalDates[ticker].date = since;
   }
 }
 
@@ -382,7 +386,7 @@ async function loadAndRender(useCache) {
         s.fetchError = null;
         signalCache[s.ticker] = { price:q.price, ema10:q.ema10, ema20:q.ema20, ema50:q.ema50, currency:q.currency };
         cacheTime[s.ticker] = Date.now();
-        trackSignal(s.ticker, q.signal);
+        trackSignal(s.ticker, q.signal, q.signalSince);
       }
     });
   } catch(ex) {
@@ -433,11 +437,12 @@ function renderCard(s, isWatch) {
     ? cur + ' ' + (s.price*s.shares).toLocaleString('sv-SE',{minimumFractionDigits:0,maximumFractionDigits:0}) : '–';
 
   var signalBar = '';
-  if (days > 0) {
+  if (signalDates[s.ticker]) {
     var pct = Math.min(100, days*5);
     var sigColor = sig==='BUY' ? 'var(--buy)' : sig==='SELL' ? 'var(--sell)' : 'var(--hold)';
+    var dayLabel = days === 0 ? 'today' : days+'d';
     signalBar = '<div class="signal-days" style="color:'+sigColor+'">'
-      +'<span>&#9201; '+sig+' active '+days+'d</span>'
+      +'<span>&#9201; '+sig+' active '+dayLabel+'</span>'
       +'<div class="signal-days-bar"><div class="signal-days-fill" style="width:'+pct+'%;background:'+sigColor+'"></div></div>'
       +'</div>';
   }

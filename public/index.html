@@ -69,9 +69,9 @@
   .card-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .metric .m-val{font-size:12px;font-weight:500;color:var(--text);}
   .metric .m-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:1px;}
-  .sell-days{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sell);}
-  .sell-days-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
-  .sell-days-fill{height:100%;background:var(--sell);border-radius:2px;}
+  .signal-days{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:10px;}
+  .signal-days-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .signal-days-fill{height:100%;border-radius:2px;}
   .ema-row{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;gap:10px;font-size:10px;color:var(--muted);flex-wrap:wrap;}
   .ema-chip{display:flex;align-items:center;gap:4px;}
   .ema-dot{width:6px;height:6px;border-radius:50%;display:inline-block;}
@@ -153,11 +153,12 @@
 
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
-var portfolio  = JSON.parse(localStorage.getItem('piq_port')       || '[]');
-var watchlist  = JSON.parse(localStorage.getItem('piq_watch')      || '[]');
-var sellDates  = JSON.parse(localStorage.getItem('piq_sell_dates') || '{}');
-var signalCache = JSON.parse(localStorage.getItem('piq_signals')   || '{}');
-var cacheTime   = JSON.parse(localStorage.getItem('piq_cache_ts')  || '{}');
+var portfolio   = JSON.parse(localStorage.getItem('piq_port')          || '[]');
+var watchlist   = JSON.parse(localStorage.getItem('piq_watch')         || '[]');
+var sellDates   = JSON.parse(localStorage.getItem('piq_sell_dates')    || '{}'); // legacy, migration only
+var signalCache = JSON.parse(localStorage.getItem('piq_signals')       || '{}');
+var cacheTime   = JSON.parse(localStorage.getItem('piq_cache_ts')      || '{}');
+var signalDates = JSON.parse(localStorage.getItem('piq_signal_dates')  || '{}');
 
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -170,17 +171,24 @@ var CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
                 || watchlist.some(function(s) { return !s.ticker; });
   if (needsReset) {
     console.warn('StockPulse: legacy data detected, clearing localStorage');
-    portfolio = []; watchlist = []; sellDates = {}; signalCache = {}; cacheTime = {};
+    portfolio = []; watchlist = []; sellDates = {}; signalCache = {}; cacheTime = {}; signalDates = {};
     localStorage.clear();
+    return;
   }
+  // Migrate old per-signal sellDates into unified signalDates
+  Object.keys(sellDates).forEach(function(ticker) {
+    if (!signalDates[ticker]) {
+      signalDates[ticker] = { signal: 'SELL', date: sellDates[ticker] };
+    }
+  });
 })();
 
 function save() {
-  localStorage.setItem('piq_port',       JSON.stringify(portfolio));
-  localStorage.setItem('piq_watch',      JSON.stringify(watchlist));
-  localStorage.setItem('piq_sell_dates', JSON.stringify(sellDates));
-  localStorage.setItem('piq_signals',    JSON.stringify(signalCache));
-  localStorage.setItem('piq_cache_ts',   JSON.stringify(cacheTime));
+  localStorage.setItem('piq_port',          JSON.stringify(portfolio));
+  localStorage.setItem('piq_watch',         JSON.stringify(watchlist));
+  localStorage.setItem('piq_signals',       JSON.stringify(signalCache));
+  localStorage.setItem('piq_cache_ts',      JSON.stringify(cacheTime));
+  localStorage.setItem('piq_signal_dates',  JSON.stringify(signalDates));
 }
 
 function isCacheValid(ticker) {
@@ -296,15 +304,16 @@ function computeSignal(price, ema10, ema20, ema50) {
   return 'HOLD';
 }
 
-function trackSell(id, signal) {
+function trackSignal(ticker, signal) {
   var today = new Date().toISOString().split('T')[0];
-  if (signal === 'SELL') { if (!sellDates[id]) sellDates[id] = today; }
-  else delete sellDates[id];
+  if (!signalDates[ticker] || signalDates[ticker].signal !== signal) {
+    signalDates[ticker] = { signal: signal, date: today };
+  }
 }
 
-function sellDaysCount(ticker) {
-  if (!sellDates[ticker]) return 0;
-  return Math.floor((Date.now() - new Date(sellDates[ticker])) / 86400000);
+function signalDaysCount(ticker) {
+  if (!signalDates[ticker]) return 0;
+  return Math.floor((Date.now() - new Date(signalDates[ticker].date)) / 86400000);
 }
 
 // ── Progress UI ────────────────────────────────────────────────────────────
@@ -341,6 +350,7 @@ async function loadAndRender(useCache) {
       s.price = c.price; s.ema10 = c.ema10; s.ema20 = c.ema20; s.ema50 = c.ema50;
       s.currency = c.currency;
       s.signal = computeSignal(c.price, c.ema10, c.ema20, c.ema50);
+      trackSignal(s.ticker, s.signal);
     }
   });
 
@@ -372,7 +382,7 @@ async function loadAndRender(useCache) {
         s.fetchError = null;
         signalCache[s.ticker] = { price:q.price, ema10:q.ema10, ema20:q.ema20, ema50:q.ema50, currency:q.currency };
         cacheTime[s.ticker] = Date.now();
-        trackSell(s.ticker, q.signal);
+        trackSignal(s.ticker, q.signal);
       }
     });
   } catch(ex) {
@@ -407,7 +417,7 @@ function fmt(n, dec) { return n != null ? n.toFixed(dec||2) : '--'; }
 
 function renderCard(s, isWatch) {
   var sig = s.signal || 'HOLD';
-  var days = sellDaysCount(s.ticker);
+  var days = signalDaysCount(s.ticker);
   var cur = s.currency || s.valuta || '';
   var pnl = null;
   // P&L: compare current price to GAV. Both should be in same currency.
@@ -422,11 +432,14 @@ function renderCard(s, isWatch) {
   var valueStr  = s.price != null && s.shares > 0
     ? cur + ' ' + (s.price*s.shares).toLocaleString('sv-SE',{minimumFractionDigits:0,maximumFractionDigits:0}) : '–';
 
-  var sellBar = '';
-  if (sig === 'SELL' && days > 0) {
+  var signalBar = '';
+  if (days > 0) {
     var pct = Math.min(100, days*5);
-    sellBar = '<div class="sell-days"><span>&#9201; SELL active '+days+'d</span>'
-      +'<div class="sell-days-bar"><div class="sell-days-fill" style="width:'+pct+'%"></div></div></div>';
+    var sigColor = sig==='BUY' ? 'var(--buy)' : sig==='SELL' ? 'var(--sell)' : 'var(--hold)';
+    signalBar = '<div class="signal-days" style="color:'+sigColor+'">'
+      +'<span>&#9201; '+sig+' active '+days+'d</span>'
+      +'<div class="signal-days-bar"><div class="signal-days-fill" style="width:'+pct+'%;background:'+sigColor+'"></div></div>'
+      +'</div>';
   }
 
   var emaRow = '';
@@ -458,7 +471,7 @@ function renderCard(s, isWatch) {
     +'<div class="metric"><div class="m-val">'+sharesStr+'</div><div class="m-lbl">Shares</div></div>'
     +'<div class="metric"><div class="m-val">'+valueStr+'</div><div class="m-lbl">Value</div></div>'
     +'</div>'
-    +emaRow+sellBar
+    +emaRow+signalBar
     +'</div>';
 }
 

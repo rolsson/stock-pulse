@@ -7,6 +7,17 @@ compatibility_date = "2024-01-01"
 #   https://stock-pulse-proxy.YOUR-SUBDOMAIN.workers.dev
 # Paste that URL into public/config.js as WORKER_URL.
 
-[observability.logs]
+[observability]
 enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
 invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1

@@ -161,6 +161,20 @@ var cacheTime   = JSON.parse(localStorage.getItem('piq_cache_ts')  || '{}');
 
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
+// ── Migrate old localStorage format (id -> ticker) ─────────────────────────
+// Earlier versions stored stocks with an 'id' field (display name) instead of
+// 'ticker' (Yahoo Finance symbol). Detect and wipe stale data so the user
+// re-imports their CSV cleanly rather than silently sending undefined tickers.
+(function migrateLegacyData() {
+  var needsReset = portfolio.some(function(s) { return !s.ticker; })
+                || watchlist.some(function(s) { return !s.ticker; });
+  if (needsReset) {
+    console.warn('StockPulse: legacy data detected, clearing localStorage');
+    portfolio = []; watchlist = []; sellDates = {}; signalCache = {}; cacheTime = {};
+    localStorage.clear();
+  }
+})();
+
 function save() {
   localStorage.setItem('piq_port',       JSON.stringify(portfolio));
   localStorage.setItem('piq_watch',      JSON.stringify(watchlist));

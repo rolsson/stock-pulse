@@ -1,2 +1,4 @@
 node_modules
-.wrangler
+.svelte-kit
+.cloudflare
+dist

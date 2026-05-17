@@ -237,6 +237,7 @@
 						currency: q.currency
 					};
 					cacheTime[entry.ticker] = Date.now();
+					trackSignal(entry.ticker, q.signal, q.signalSince);
 					watchlist = [...watchlist];
 					save();
 				} else if (q?.error) {

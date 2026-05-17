@@ -1,10 +1,8 @@
-const CACHE = 'stock-pulse-v1';
+const CACHE = 'stock-pulse-v2';
 
 const SHELL = [
   '/',
-  '/index.html',
   '/manifest.json',
-  '/config.js',
   'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap',
 ];
 
@@ -30,8 +28,8 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var url = e.request.url;
 
-  // Never cache Worker / API calls
-  if (url.includes('workers.dev') || url.includes('api.anthropic.com')) {
+  // Never cache API calls
+  if (url.includes('/api/')) {
     e.respondWith(fetch(e.request));
     return;
   }
@@ -46,7 +44,7 @@ self.addEventListener('fetch', function (e) {
         caches.open(CACHE).then(function (cache) { cache.put(e.request, clone); });
         return response;
       }).catch(function () {
-        if (e.request.mode === 'navigate') return caches.match('/index.html');
+        if (e.request.mode === 'navigate') return caches.match('/');
       });
     })
   );

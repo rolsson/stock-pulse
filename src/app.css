@@ -110,8 +110,8 @@ body {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: 10px;
-	padding: 12px 14px;
-	margin-bottom: 8px;
+	padding: 10px 14px;
+	margin-bottom: 6px;
 	position: relative;
 	overflow: hidden;
 }
@@ -129,26 +129,36 @@ body {
 
 .card-top {
 	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	margin-bottom: 8px;
-}
-
-.card-title {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	min-width: 0;
-	flex: 1;
-	margin-right: 8px;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 4px;
 }
 
 .ticker {
-	font-size: 15px;
+	font-size: 14px;
 	font-weight: 500;
 	font-family: var(--font-display);
 	letter-spacing: -0.3px;
+	flex-shrink: 0;
 }
+
+.ema-rule {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	font-size: 9px;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+}
+.ema-rule .lbl { color: var(--muted); }
+.ema-rule .num { color: var(--text); }
+.ema-rule .op { font-weight: 700; font-size: 10px; }
+.ema-rule .op.green { color: var(--buy); }
+.ema-rule .op.red { color: var(--sell); }
+.ema-rule .sep { width: 8px; flex-shrink: 0; }
+.ema-rule.fetch-error { color: var(--hold); font-size: 9px; }
 
 .stock-name {
 	font-size: 10px;
@@ -156,6 +166,7 @@ body {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	margin-bottom: 5px;
 }
 
 .signal-badge {
@@ -177,7 +188,7 @@ body {
 .card-metrics {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 8px;
+	gap: 6px;
 }
 
 .metric .m-val { font-size: 12px; font-weight: 500; color: var(--text); }
@@ -190,8 +201,8 @@ body {
 }
 
 .signal-days {
-	margin-top: 7px;
-	padding-top: 7px;
+	margin-top: 6px;
+	padding-top: 6px;
 	border-top: 1px solid var(--border);
 	display: flex;
 	align-items: center;
@@ -206,19 +217,6 @@ body {
 	overflow: hidden;
 }
 .signal-days-fill { height: 100%; border-radius: 2px; }
-
-.ema-row {
-	margin-top: 7px;
-	padding-top: 7px;
-	border-top: 1px solid var(--border);
-	display: flex;
-	gap: 10px;
-	font-size: 10px;
-	color: var(--muted);
-	flex-wrap: wrap;
-}
-.ema-chip { display: flex; align-items: center; gap: 4px; }
-.ema-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
 
 .empty {
 	text-align: center;

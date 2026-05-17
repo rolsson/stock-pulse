@@ -36,6 +36,11 @@
 	}
 
 	// ── Signal tracking ────────────────────────────────────────────────────────
+	function signalDaysCount(ticker: string): number {
+		if (!signalDates[ticker]) return 0;
+		return Math.floor((Date.now() - new Date(signalDates[ticker].date).getTime()) / 86400000);
+	}
+
 	function trackSignal(ticker: string, signal: Signal, since?: string | null) {
 		const today = new Date().toISOString().split('T')[0];
 		const date = since || today;

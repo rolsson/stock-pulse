@@ -1,4 +1,4 @@
-const CACHE = 'stock-pulse-v2';
+const CACHE = 'stock-pulse-v3';
 
 const SHELL = [
   '/',

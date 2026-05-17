@@ -118,11 +118,13 @@
 			}
 		}
 
-		// Sort portfolio: BUY → SELL → HOLD
-		const order: Record<string, number> = { BUY: 0, SELL: 1, HOLD: 2 };
-		portfolio = [...portfolio].sort(
-			(a, b) => (order[a.signal || 'HOLD'] ?? 2) - (order[b.signal || 'HOLD'] ?? 2)
-		);
+		// Sort portfolio: SELL → BUY → HOLD, then by signal age ascending (most recent first)
+		const order: Record<string, number> = { SELL: 0, BUY: 1, HOLD: 2 };
+		portfolio = [...portfolio].sort((a, b) => {
+			const sigDiff = (order[a.signal || 'HOLD'] ?? 2) - (order[b.signal || 'HOLD'] ?? 2);
+			if (sigDiff !== 0) return sigDiff;
+			return signalDaysCount(a.ticker) - signalDaysCount(b.ticker);
+		});
 		watchlist = [...watchlist];
 
 		save();
@@ -355,20 +357,20 @@
 			<div class="summary-pill hold"><div class="val">{holdsP.length}</div><div class="lbl">Hold</div></div>
 			<div class="summary-pill sell"><div class="val">{sellsP.length}</div><div class="lbl">Sell</div></div>
 		</div>
-		{#if buysP.length}
-			<div class="section-header">🟢 Buy Signals</div>
-			{#each buysP as stock (stock.ticker)}
-				<StockCard {stock} {signalDates} />
-			{/each}
-		{/if}
 		{#if sellsP.length}
-			<div class="section-header" style="margin-top:12px">🔴 Sell Signals</div>
+			<div class="section-header">🔴 Sell Signals</div>
 			{#each sellsP as stock (stock.ticker)}
 				<StockCard {stock} {signalDates} />
 			{/each}
 		{/if}
+		{#if buysP.length}
+			<div class="section-header" style="margin-top:{sellsP.length ? '12px' : '0'}">🟢 Buy Signals</div>
+			{#each buysP as stock (stock.ticker)}
+				<StockCard {stock} {signalDates} />
+			{/each}
+		{/if}
 		{#if holdsP.length}
-			<div class="section-header" style="margin-top:12px">🟠 Hold</div>
+			<div class="section-header" style="margin-top:{sellsP.length || buysP.length ? '12px' : '0'}">🟠 Hold</div>
 			{#each holdsP as stock (stock.ticker)}
 				<StockCard {stock} {signalDates} />
 			{/each}

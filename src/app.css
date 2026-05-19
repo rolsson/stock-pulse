@@ -140,7 +140,11 @@ body {
 	font-family: var(--font-display);
 	letter-spacing: -0.3px;
 	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 5px;
 }
+.flag { font-size: 13px; line-height: 1; }
 
 .ema-rule {
 	display: flex;

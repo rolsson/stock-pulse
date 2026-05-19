@@ -14,6 +14,18 @@
 		return Math.floor((Date.now() - new Date(signalDates[ticker].date).getTime()) / 86400000);
 	}
 
+	function flag(ticker: string): string {
+		if (ticker.endsWith('.ST')) return '🇸🇪';
+		if (ticker.endsWith('.CO')) return '🇩🇰';
+		if (ticker.endsWith('.HE')) return '🇫🇮';
+		if (ticker.endsWith('.OL')) return '🇳🇴';
+		if (ticker.endsWith('.L'))  return '🇬🇧';
+		if (ticker.endsWith('.PA')) return '🇫🇷';
+		if (ticker.endsWith('.DE') || ticker.endsWith('.F')) return '🇩🇪';
+		if (ticker.endsWith('.AS')) return '🇳🇱';
+		return '🇺🇸';
+	}
+
 	$: sig = stock.signal || 'HOLD';
 	$: days = signalDaysCount(stock.ticker);
 	$: cur = stock.currency || stock.valuta || '';
@@ -41,7 +53,7 @@
 <div class="stock-card {isWatch ? 'WATCH' : sig}">
 	<!-- Line 1: ticker | ema rule | signal badge -->
 	<div class="card-top">
-		<div class="ticker">{stock.kortnamn}</div>
+		<div class="ticker"><span class="flag">{flag(stock.ticker)}</span>{stock.kortnamn}</div>
 		{#if stock.ema10 != null}
 			<div class="ema-rule">
 				<span class="lbl">EMA10</span><span class="num">{fmt(stock.ema10, 1)}</span>

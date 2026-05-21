@@ -45,66 +45,69 @@
 	$: badge = isWatch ? 'WATCH' : sig;
 	$: label = stock.displayName && stock.displayName !== stock.kortnamn ? stock.displayName : '';
 	$: sigColor = sig === 'BUY' ? 'var(--buy)' : sig === 'SELL' ? 'var(--sell)' : 'var(--hold)';
-	$: pct = Math.min(100, days * 5);
 	$: e10gtE20 = stock.ema10 != null && stock.ema20 != null && stock.ema10 > stock.ema20;
 	$: pgtE50 = stock.price != null && stock.ema50 != null && stock.price > stock.ema50;
 </script>
 
 <div class="stock-card {isWatch ? 'WATCH' : sig}">
-	<!-- Line 1: ticker | ema rule | signal badge -->
-	<div class="card-top">
-		<div class="ticker"><span class="flag">{flag(stock.ticker)}</span>{stock.kortnamn}</div>
-		{#if stock.ema10 != null}
-			<div class="ema-rule">
-				<span class="lbl">EMA10</span><span class="num">{fmt(stock.ema10, 1)}</span>
-				<span class="op" class:green={e10gtE20} class:red={!e10gtE20}>{e10gtE20 ? '>' : '<'}</span>
-				<span class="lbl">EMA20</span><span class="num">{fmt(stock.ema20, 1)}</span>
-				<span class="sep"></span>
-				<span class="lbl">PRICE</span><span class="num">{fmt(stock.price, 1)}</span>
-				<span class="op" class:green={pgtE50} class:red={!pgtE50}>{pgtE50 ? '>' : '<'}</span>
-				<span class="lbl">EMA50</span><span class="num">{fmt(stock.ema50, 1)}</span>
-			</div>
-		{:else if stock.fetchError}
-			<div class="ema-rule fetch-error">⚠ {stock.fetchError}</div>
-		{/if}
+	<!-- Line 1: flag + name (ticker) | badge -->
+	<div class="card-line1">
+		<div class="card-identity">
+			<span class="flag">{flag(stock.ticker)}</span>
+			<span class="identity-name">
+				{#if label}{label} <span class="identity-ticker">({stock.kortnamn})</span>{:else}{stock.kortnamn}{/if}
+			</span>
+		</div>
 		<span class="signal-badge {badge}">{badge}</span>
 	</div>
 
-	<!-- Line 2: stock name -->
-	{#if label}
-		<div class="stock-name">{label}</div>
-	{/if}
-
-	<!-- Line 3: metrics -->
+	<!-- Line 2: price, shares, value -->
 	<div class="card-metrics">
 		<div class="metric">
-			<div class="m-val">{priceStr}</div>
 			<div class="m-lbl">
-				Price
-				{#if pnl != null}
-					<span class="price-change {pnl >= 0 ? 'pos' : 'neg'}">
-						{pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
-					</span>
-				{/if}
+				PRICE{#if pnl != null} <span class="pnl {pnl >= 0 ? 'pos' : 'neg'}">{pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%</span>{/if}
 			</div>
+			<div class="m-val">{priceStr}</div>
 		</div>
 		<div class="metric">
+			<div class="m-lbl">SHARES</div>
 			<div class="m-val">{sharesStr}</div>
-			<div class="m-lbl">Shares</div>
 		</div>
 		<div class="metric">
+			<div class="m-lbl">VALUE</div>
 			<div class="m-val">{valueStr}</div>
-			<div class="m-lbl">Value</div>
 		</div>
 	</div>
 
-	<!-- Line 4: signal days -->
-	{#if signalDates[stock.ticker]}
-		<div class="signal-days" style="color:{sigColor}">
-			<span>⏱ {sig} active {days === 0 ? 'today' : `${days}d`}</span>
-			<div class="signal-days-bar">
-				<div class="signal-days-fill" style="width:{pct}%;background:{sigColor}"></div>
+	<!-- Line 3: signal calc | age -->
+	{#if stock.ema10 != null}
+		<div class="card-signal">
+			<div class="signal-calcs">
+				<div class="sig-group">
+					<div class="m-lbl">EMA10 / EMA20</div>
+					<div class="m-val">
+						{fmt(stock.ema10, 1)}
+						<span class="op" class:green={e10gtE20} class:red={!e10gtE20}>{e10gtE20 ? '>' : '<'}</span>
+						{fmt(stock.ema20, 1)}
+					</div>
+				</div>
+				<div class="sig-group">
+					<div class="m-lbl">PRICE / EMA50</div>
+					<div class="m-val">
+						{fmt(stock.price, 1)}
+						<span class="op" class:green={pgtE50} class:red={!pgtE50}>{pgtE50 ? '>' : '<'}</span>
+						{fmt(stock.ema50, 1)}
+					</div>
+				</div>
 			</div>
+			{#if signalDates[stock.ticker]}
+				<div class="sig-age">
+					<div class="m-lbl">ACTIVE</div>
+					<div class="m-val" style="color:{sigColor}">{days === 0 ? 'today' : `${days}d`}</div>
+				</div>
+			{/if}
 		</div>
+	{:else if stock.fetchError}
+		<div class="card-error">⚠ {stock.fetchError}</div>
 	{/if}
 </div>

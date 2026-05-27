@@ -65,7 +65,7 @@
 	<div class="card-metrics">
 		<div class="metric">
 			<div class="m-lbl">
-				PRICE{#if pnl != null} <span class="pnl {pnl >= 0 ? 'pos' : 'neg'}">{pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%</span>{/if}
+				PRICE{#if pnl != null} <span class="pnl {pnl >= 0 ? 'pos' : 'neg'}">{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%</span>{/if}
 			</div>
 			<div class="m-val">{priceStr}</div>
 		</div>
@@ -86,17 +86,17 @@
 				<div class="sig-group">
 					<div class="m-lbl">EMA10 / EMA20</div>
 					<div class="m-val">
-						{fmt(stock.ema10, 1)}
+						{fmt(stock.ema10)}
 						<span class="op" class:green={e10gtE20} class:red={!e10gtE20}>{e10gtE20 ? '>' : '<'}</span>
-						{fmt(stock.ema20, 1)}
+						{fmt(stock.ema20)}
 					</div>
 				</div>
 				<div class="sig-group">
 					<div class="m-lbl">PRICE / EMA50</div>
 					<div class="m-val">
-						{fmt(stock.price, 1)}
+						{fmt(stock.price)}
 						<span class="op" class:green={pgtE50} class:red={!pgtE50}>{pgtE50 ? '>' : '<'}</span>
-						{fmt(stock.ema50, 1)}
+						{fmt(stock.ema50)}
 					</div>
 				</div>
 			</div>

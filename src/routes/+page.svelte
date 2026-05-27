@@ -15,6 +15,7 @@
 	let signalDates: Record<string, SignalDate> = {};
 
 	let activeTab: 'portfolio' | 'watchlist' | 'import' = 'portfolio';
+	let signalTab: 'SELL' | 'BUY' | 'HOLD' = 'SELL';
 	let isLoading = false;
 	let errorMsg = '';
 	let watchInput = '';
@@ -288,6 +289,7 @@
 	$: holdsP = portfolio.filter((s) => !s.signal || s.signal === 'HOLD');
 	$: buysW = watchlist.filter((s) => s.signal === 'BUY');
 	$: othersW = watchlist.filter((s) => s.signal !== 'BUY');
+	$: visibleStocks = signalTab === 'SELL' ? sellsP : signalTab === 'BUY' ? buysP : holdsP;
 </script>
 
 <svelte:head>
@@ -351,26 +353,24 @@
 		{#if updatedAt}
 			<div class="last-updated">Updated {updatedAt}</div>
 		{/if}
-		<div class="summary-bar">
-			<div class="summary-pill buy"><div class="val">{buysP.length}</div><div class="lbl">Buy</div></div>
-			<div class="summary-pill hold"><div class="val">{holdsP.length}</div><div class="lbl">Hold</div></div>
-			<div class="summary-pill sell"><div class="val">{sellsP.length}</div><div class="lbl">Sell</div></div>
+		<div class="signal-tabs">
+			<button class="signal-tab sell" class:active={signalTab === 'SELL'} on:click={() => (signalTab = 'SELL')}>
+				<div class="tab-count">{sellsP.length}</div>
+				<div class="tab-label">Sell</div>
+			</button>
+			<button class="signal-tab buy" class:active={signalTab === 'BUY'} on:click={() => (signalTab = 'BUY')}>
+				<div class="tab-count">{buysP.length}</div>
+				<div class="tab-label">Buy</div>
+			</button>
+			<button class="signal-tab hold" class:active={signalTab === 'HOLD'} on:click={() => (signalTab = 'HOLD')}>
+				<div class="tab-count">{holdsP.length}</div>
+				<div class="tab-label">Hold</div>
+			</button>
 		</div>
-		{#if sellsP.length}
-			<div class="section-header">🔴 Sell Signals</div>
-			{#each sellsP as stock (stock.ticker)}
-				<StockCard {stock} {signalDates} />
-			{/each}
-		{/if}
-		{#if buysP.length}
-			<div class="section-header" style="margin-top:{sellsP.length ? '12px' : '0'}">🟢 Buy Signals</div>
-			{#each buysP as stock (stock.ticker)}
-				<StockCard {stock} {signalDates} />
-			{/each}
-		{/if}
-		{#if holdsP.length}
-			<div class="section-header" style="margin-top:{sellsP.length || buysP.length ? '12px' : '0'}">🟠 Hold</div>
-			{#each holdsP as stock (stock.ticker)}
+		{#if visibleStocks.length === 0}
+			<div class="empty" style="padding:20px 0">No {signalTab} signals</div>
+		{:else}
+			{#each visibleStocks as stock (stock.ticker)}
 				<StockCard {stock} {signalDates} />
 			{/each}
 		{/if}

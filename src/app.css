@@ -251,24 +251,29 @@ body {
 	border-bottom: 1px solid var(--border);
 }
 
-.summary-bar {
+.signal-tabs {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr;
 	gap: 8px;
-	margin-bottom: 14px;
+	margin-bottom: 12px;
 }
-.summary-pill {
+.signal-tab {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	padding: 8px 10px;
 	text-align: center;
+	cursor: pointer;
+	transition: border-color 0.15s, background 0.15s;
 }
-.summary-pill .val { font-size: 18px; font-weight: 500; line-height: 1; margin-bottom: 2px; }
-.summary-pill .lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-.summary-pill.buy .val { color: var(--buy); }
-.summary-pill.sell .val { color: var(--sell); }
-.summary-pill.hold .val { color: var(--hold); }
+.signal-tab .tab-count { font-size: 18px; font-weight: 500; line-height: 1; margin-bottom: 2px; }
+.signal-tab .tab-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.signal-tab.sell .tab-count { color: var(--sell); }
+.signal-tab.buy .tab-count { color: var(--buy); }
+.signal-tab.hold .tab-count { color: var(--hold); }
+.signal-tab.active.sell { border-color: var(--sell); background: var(--sell-dim); }
+.signal-tab.active.buy { border-color: var(--buy); background: var(--buy-dim); }
+.signal-tab.active.hold { border-color: var(--hold); background: var(--hold-dim); }
 
 .last-updated { font-size: 9px; color: var(--muted); margin-bottom: 12px; }
 

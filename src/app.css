@@ -107,11 +107,8 @@ body {
 .panel.active { display: block; }
 
 .stock-card {
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	padding: 10px 14px;
-	margin-bottom: 6px;
+	border-bottom: 1px solid var(--border);
+	padding: 12px 0 12px 10px;
 	position: relative;
 	overflow: hidden;
 }
@@ -120,7 +117,6 @@ body {
 	position: absolute;
 	left: 0; top: 0; bottom: 0;
 	width: 3px;
-	border-radius: 10px 0 0 10px;
 }
 .stock-card.BUY::before { background: var(--buy); }
 .stock-card.SELL::before { background: var(--sell); }
@@ -172,8 +168,8 @@ body {
 /* Line 2 */
 .card-metrics {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 6px;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 4px;
 	margin-bottom: 8px;
 }
 
@@ -204,9 +200,13 @@ body {
 	align-items: center;
 	gap: 3px;
 }
-.pnl { font-weight: 400; }
-.pnl.pos { color: var(--buy); }
-.pnl.neg { color: var(--sell); }
+.m-val2 {
+	font-size: 10px;
+	color: var(--muted);
+	margin-top: 1px;
+}
+.m-val.pos, .m-val2.pos { color: var(--buy); }
+.m-val.neg, .m-val2.neg { color: var(--sell); }
 .op { font-weight: 700; font-size: 12px; }
 .op.green { color: var(--buy); }
 .op.red { color: var(--sell); }

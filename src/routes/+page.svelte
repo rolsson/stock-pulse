@@ -62,7 +62,7 @@
 			const txt = await res.text();
 			throw new Error(`API error ${res.status}: ${txt.slice(0, 200)}`);
 		}
-		return res.json() as Promise<Record<string, { price: number; ema10: number; ema20: number; ema50: number; signal: Signal; currency: string; signalSince: string | null; error?: string }>>;
+		return res.json() as Promise<Record<string, { price: number; previousClose: number; ema10: number; ema20: number; ema50: number; signal: Signal; currency: string; signalSince: string | null; error?: string }>>;
 	}
 
 	// ── Load & render ──────────────────────────────────────────────────────────
@@ -78,6 +78,7 @@
 			if (isCacheValid(s.ticker) && signalCache[s.ticker]) {
 				const c = signalCache[s.ticker];
 				s.price = c.price;
+				s.previousClose = c.previousClose;
 				s.ema10 = c.ema10;
 				s.ema20 = c.ema20;
 				s.ema50 = c.ema50;
@@ -97,6 +98,7 @@
 						if (!s.signal) s.signal = 'HOLD';
 					} else {
 						s.price = q.price;
+						s.previousClose = q.previousClose;
 						s.ema10 = q.ema10;
 						s.ema20 = q.ema20;
 						s.ema50 = q.ema50;
@@ -105,6 +107,7 @@
 						s.fetchError = undefined;
 						signalCache[s.ticker] = {
 							price: q.price,
+							previousClose: q.previousClose,
 							ema10: q.ema10,
 							ema20: q.ema20,
 							ema50: q.ema50,
@@ -224,6 +227,7 @@
 					watchlist[idx] = {
 						...watchlist[idx],
 						price: q.price,
+						previousClose: q.previousClose,
 						ema10: q.ema10,
 						ema20: q.ema20,
 						ema50: q.ema50,
@@ -232,6 +236,7 @@
 					};
 					signalCache[entry.ticker] = {
 						price: q.price,
+						previousClose: q.previousClose,
 						ema10: q.ema10,
 						ema20: q.ema20,
 						ema50: q.ema50,

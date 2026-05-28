@@ -9,6 +9,10 @@
 		return n != null ? n.toFixed(dec) : '--';
 	}
 
+	function fmtSigned(n: number, dec = 2): string {
+		return (n >= 0 ? '+' : '') + n.toFixed(dec);
+	}
+
 	function signalDaysCount(ticker: string): number {
 		if (!signalDates[ticker]) return 0;
 		return Math.floor((Date.now() - new Date(signalDates[ticker].date).getTime()) / 86400000);
@@ -29,24 +33,37 @@
 	$: sig = stock.signal || 'HOLD';
 	$: days = signalDaysCount(stock.ticker);
 	$: cur = stock.currency || stock.valuta || '';
-	$: pnl =
-		stock.price != null && stock.costBasis
-			? ((stock.price - stock.costBasis) / stock.costBasis) * 100
-			: null;
-	$: priceStr = stock.price != null ? `${cur} ${fmt(stock.price)}` : '–';
-	$: sharesStr =
-		stock.shares > 0
-			? stock.shares.toLocaleString('sv-SE', { maximumFractionDigits: 4 })
-			: '–';
-	$: valueStr =
-		stock.price != null && stock.shares > 0
-			? `${cur} ${(stock.price * stock.shares).toLocaleString('sv-SE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-			: '–';
-	$: badge = isWatch ? 'WATCH' : sig;
 	$: label = stock.displayName && stock.displayName !== stock.kortnamn ? stock.displayName : '';
+	$: badge = isWatch ? 'WATCH' : sig;
 	$: sigColor = sig === 'BUY' ? 'var(--buy)' : sig === 'SELL' ? 'var(--sell)' : 'var(--hold)';
 	$: e10gtE20 = stock.ema10 != null && stock.ema20 != null && stock.ema10 > stock.ema20;
 	$: pgtE50 = stock.price != null && stock.ema50 != null && stock.price > stock.ema50;
+
+	// Today's change
+	$: todayChangePct = stock.price != null && stock.previousClose != null && stock.previousClose !== 0
+		? (stock.price - stock.previousClose) / stock.previousClose * 100
+		: null;
+	$: todayChangeAbs = stock.price != null && stock.previousClose != null
+		? stock.price - stock.previousClose
+		: null;
+	$: todayClass = todayChangePct == null ? '' : todayChangePct >= 0 ? 'pos' : 'neg';
+
+	// P&L
+	$: pnlPct = stock.price != null && stock.costBasis
+		? (stock.price - stock.costBasis) / stock.costBasis * 100
+		: null;
+	$: pnlAbs = stock.price != null && stock.costBasis && stock.shares > 0
+		? (stock.price - stock.costBasis) * stock.shares
+		: null;
+	$: pnlClass = pnlPct == null ? '' : pnlPct >= 0 ? 'pos' : 'neg';
+
+	// Holdings
+	$: valueStr = stock.price != null && stock.shares > 0
+		? (stock.price * stock.shares).toLocaleString('sv-SE', { maximumFractionDigits: 0 })
+		: '–';
+	$: sharesStr = stock.shares > 0
+		? stock.shares.toLocaleString('sv-SE', { maximumFractionDigits: 4 })
+		: '–';
 </script>
 
 <div class="stock-card {isWatch ? 'WATCH' : sig}">
@@ -61,21 +78,41 @@
 		<span class="signal-badge {badge}">{badge}</span>
 	</div>
 
-	<!-- Line 2: price, shares, value -->
+	<!-- Line 2: 4-column metrics -->
 	<div class="card-metrics">
 		<div class="metric">
-			<div class="m-lbl">
-				PRICE{#if pnl != null} <span class="pnl {pnl >= 0 ? 'pos' : 'neg'}">{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%</span>{/if}
-			</div>
-			<div class="m-val">{priceStr}</div>
+			<div class="m-lbl">TODAY</div>
+			{#if todayChangePct != null}
+				<div class="m-val {todayClass}">{fmtSigned(todayChangePct)}%</div>
+				<div class="m-val2 {todayClass}">{fmtSigned(todayChangeAbs ?? 0)} {cur}</div>
+			{:else}
+				<div class="m-val">–</div>
+			{/if}
 		</div>
 		<div class="metric">
-			<div class="m-lbl">SHARES</div>
-			<div class="m-val">{sharesStr}</div>
+			<div class="m-lbl">PRICE / COST</div>
+			<div class="m-val">{fmt(stock.price)} {cur}</div>
+			{#if stock.costBasis}
+				<div class="m-val2">{fmt(stock.costBasis)} {cur}</div>
+			{/if}
 		</div>
 		<div class="metric">
-			<div class="m-lbl">VALUE</div>
-			<div class="m-val">{valueStr}</div>
+			<div class="m-lbl">SINCE BUY</div>
+			{#if pnlPct != null}
+				<div class="m-val {pnlClass}">{fmtSigned(pnlPct)}%</div>
+				{#if pnlAbs != null}
+					<div class="m-val2 {pnlClass}">{fmtSigned(pnlAbs, 0)} {cur}</div>
+				{/if}
+			{:else}
+				<div class="m-val">–</div>
+			{/if}
+		</div>
+		<div class="metric">
+			<div class="m-lbl">VALUE / QTY</div>
+			<div class="m-val">{valueStr} {stock.shares > 0 ? cur : ''}</div>
+			{#if stock.shares > 0}
+				<div class="m-val2">{sharesStr} st</div>
+			{/if}
 		</div>
 	</div>
 

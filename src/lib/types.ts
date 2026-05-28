@@ -10,6 +10,7 @@ export interface Stock {
 	marknad: string;
 	// Runtime fields (not persisted to localStorage)
 	price?: number;
+	previousClose?: number;
 	ema10?: number;
 	ema20?: number;
 	ema50?: number;
@@ -25,6 +26,7 @@ export interface SignalDate {
 
 export interface CachedSignal {
 	price: number;
+	previousClose?: number;
 	ema10: number;
 	ema20: number;
 	ema50: number;

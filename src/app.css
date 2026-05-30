@@ -108,20 +108,9 @@ body {
 
 .stock-card {
 	border-bottom: 1px solid var(--border);
-	padding: 12px 0 12px 10px;
-	position: relative;
-	overflow: hidden;
+	padding: 12px 0;
+	cursor: pointer;
 }
-.stock-card::before {
-	content: '';
-	position: absolute;
-	left: 0; top: 0; bottom: 0;
-	width: 3px;
-}
-.stock-card.BUY::before { background: var(--buy); }
-.stock-card.SELL::before { background: var(--sell); }
-.stock-card.HOLD::before { background: var(--hold); }
-.stock-card.WATCH::before { background: var(--accent); }
 
 /* Line 1 */
 .card-line1 {
@@ -148,6 +137,13 @@ body {
 	text-overflow: ellipsis;
 }
 .identity-ticker { font-size: 11px; color: var(--muted); font-weight: 400; }
+.card-right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+.age-text { font-size: 11px; font-weight: 500; }
 
 .signal-badge {
 	font-size: 10px;
@@ -173,16 +169,14 @@ body {
 	margin-bottom: 8px;
 }
 
-/* Line 3 */
+/* Line 3 (expanded) */
 .card-signal {
 	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
+	gap: 14px;
 	padding-top: 7px;
 	border-top: 1px solid var(--border);
+	margin-top: 4px;
 }
-.signal-calcs { display: flex; gap: 14px; }
-.sig-age { text-align: right; }
 
 /* Shared label/value */
 .m-lbl {

@@ -79,17 +79,14 @@ async function quoteForTicker(ticker: string) {
 		const closes = days.map((d) => d.close);
 		const price: number = meta.regularMarketPrice ?? closes[closes.length - 1];
 
-		// Use regularMarketPreviousClose if available (works for Nordic markets).
-		// For US markets Yahoo appends today's close to the historical array once the
-		// session ends, so closes[-1] == price and gives 0% change. Detect that case
-		// by checking the last bar's date and step back one more index if needed.
-		const lastBarDate = days[days.length - 1].ts
-			? new Date(days[days.length - 1].ts! * 1000).toISOString().split('T')[0]
-			: null;
-		const today = new Date().toISOString().split('T')[0];
-		const lastBarIsToday = lastBarDate === today;
-		const prevIdx = lastBarIsToday ? closes.length - 2 : closes.length - 1;
-		const previousClose: number = meta.regularMarketPreviousClose ?? closes[prevIdx] ?? price;
+		// When the market is open, price differs from the last historical close (yesterday),
+		// so previousClose = closes[-1]. When closed (after hours, weekends), price equals
+		// the last close bar, so we step back one more to get the prior session.
+		const lastClose = closes[closes.length - 1];
+		const priceMatchesLastClose = lastClose > 0 && Math.abs(price - lastClose) / lastClose < 0.0001;
+		const previousClose: number = meta.regularMarketPreviousClose
+			?? (priceMatchesLastClose ? closes[closes.length - 2] : lastClose)
+			?? price;
 		const currency: string = meta.currency ?? 'USD';
 		const e10 = ema(closes, 10);
 		const e20 = ema(closes, 20);
